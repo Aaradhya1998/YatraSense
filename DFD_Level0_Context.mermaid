@@ -1,0 +1,17 @@
+flowchart TB
+    Tourist([Tourist / End User])
+    Authority([Site Authority / Monument Staff])
+    System[["CROWD INTELLIGENCE PLATFORM"]]
+    CameraFeed[("Sample / Simulated Camera Feed")]
+    HistData[("Historical Crowd Pattern Data")]
+    StaticInfo[("Monument Static Info: Hours, Tickets, Parking")]
+
+    Tourist -- "1. Requests monument info / best-time recommendation" --> System
+    System -- "2. Returns hours, tickets, parking, live crowd status, forecast" --> Tourist
+
+    Authority -- "3. Opens dashboard / views live status" --> System
+    System -- "4. Pushes density level + threshold alerts" --> Authority
+
+    CameraFeed -- "5. Provides raw video frames" --> System
+    HistData -- "6. Provides day/hour crowd pattern lookup" --> System
+    StaticInfo -- "7. Provides curated monument details" --> System

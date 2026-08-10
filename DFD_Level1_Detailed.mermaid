@@ -1,0 +1,36 @@
+flowchart TB
+    subgraph SRC["Input Sources"]
+        Video[("Sample Video File\n(low_crowd.mp4 / high_crowd.mp4)")]
+        HistCSV[("historical_pattern.csv")]
+        InfoJSON[("monument_info.json")]
+    end
+
+    subgraph CORE["Core Processing"]
+        CV["P1: CV Engine\n(YOLOv8 person detection)"]
+        DC["P2: Density Classifier\n(Low / Medium / High)"]
+        PE["P3: Predictive Engine\n(trend + historical lookup)"]
+        AS["P4: Alert Service\n(threshold check)"]
+    end
+
+    subgraph API["API Layer"]
+        BE["P5: FastAPI Backend"]
+    end
+
+    subgraph UI["Presentation Layer"]
+        TV["Tourist Dashboard (Streamlit)"]
+        AD["Authority Dashboard (Streamlit)"]
+    end
+
+    Video -- "raw frames" --> CV
+    CV -- "D1: person_count per sampled frame" --> DC
+    DC -- "D2: density_label + rolling_count" --> PE
+    DC -- "D2: density_label" --> AS
+    HistCSV -- "D3: expected_density by day+hour" --> PE
+    PE -- "D4: forecast_label + forecast_text" --> BE
+    AS -- "D5: alert_event (if triggered)" --> BE
+    InfoJSON -- "D6: static monument data" --> BE
+
+    BE -- "D7: /monument-info response" --> TV
+    BE -- "D8: /crowd-status response (current + forecast)" --> TV
+    BE -- "D8: /crowd-status response" --> AD
+    BE -- "D9: /alerts response (active alert list)" --> AD
