@@ -1,0 +1,7 @@
+{
+  "name": "Shaniwarwada Fort",
+  "location": {"lat": 18.5195, "lng": 73.8553},
+  "hours": {"open": "08:00", "close": "18:30"},
+  "ticket_price": {"indian": 25, "foreign": 300, "currency": "INR"},
+  "parking_price": 30
+}

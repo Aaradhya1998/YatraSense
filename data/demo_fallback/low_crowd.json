@@ -1,0 +1,9 @@
+{
+  "current_density": "LOW",
+  "person_count_estimate": 6,
+  "forecast": {
+    "label": "LOW",
+    "text": "Likely to remain LOW for ~20 minutes",
+    "eta_minutes": 20
+  }
+}
