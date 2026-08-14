@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 import os
 from datetime import datetime
@@ -18,12 +19,15 @@ from .predictive_engine import get_forecast
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data"
 MONUMENT_INFO_PATH = DATA_DIR / "monument_info.json"
+HISTORICAL_PATTERN_PATH = DATA_DIR / "historical_pattern.csv"
 DEMO_FALLBACK_DIR = DATA_DIR / "demo_fallback"
 SAMPLE_VIDEO_DIR = DATA_DIR / "sample_videos"
 SAMPLE_VIDEOS = {
     "low_crowd": SAMPLE_VIDEO_DIR / "low_crowd.mp4",
     "high_crowd": SAMPLE_VIDEO_DIR / "high_crowd.mp4",
 }
+WEEK_DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+DENSITY_PRIORITY = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
 
 app = FastAPI(title="Crowd Intelligence Backend")
 
@@ -106,6 +110,92 @@ def _load_demo_fallback_status(video_key: str) -> dict[str, Any]:
         ) from exc
 
 
+def _parse_hour_minutes(time_text: str, field_name: str) -> int:
+    try:
+        hour_text, minute_text = time_text.split(":", maxsplit=1)
+        hour = int(hour_text)
+        minute = int(minute_text)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Invalid monument {field_name} time: {time_text}",
+        ) from exc
+
+    if not 0 <= hour <= 23 or not 0 <= minute <= 59:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Invalid monument {field_name} time: {time_text}",
+        )
+
+    return (hour * 60) + minute
+
+
+def _hour_is_open(hour: int, open_minutes: int, close_minutes: int) -> bool:
+    hour_minutes = hour * 60
+    if open_minutes <= close_minutes:
+        return open_minutes <= hour_minutes < close_minutes
+    return hour_minutes >= open_minutes or hour_minutes < close_minutes
+
+
+def _load_weekly_historical_pattern() -> dict[str, list[dict[str, str]]]:
+    if not HISTORICAL_PATTERN_PATH.exists():
+        raise HTTPException(status_code=500, detail="historical_pattern.csv not found")
+
+    monument_info = _load_monument_info()
+    try:
+        hours = monument_info["hours"]
+        open_minutes = _parse_hour_minutes(hours["open"], "opening")
+        close_minutes = _parse_hour_minutes(hours["close"], "closing")
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Missing monument hours field: {exc.args[0]}",
+        ) from exc
+
+    daily_peak_scores: dict[str, int] = {}
+
+    try:
+        with HISTORICAL_PATTERN_PATH.open(newline="", encoding="utf-8") as pattern_file:
+            rows = (line for line in pattern_file if not line.lstrip().startswith("#"))
+            reader = csv.DictReader(rows)
+
+            for row in reader:
+                day = row.get("day_of_week")
+                density = row.get("expected_density")
+                try:
+                    hour = int(row.get("hour", ""))
+                except ValueError:
+                    continue
+
+                if (
+                    day in WEEK_DAYS
+                    and density in DENSITY_PRIORITY
+                    and _hour_is_open(hour, open_minutes, close_minutes)
+                ):
+                    current_peak = daily_peak_scores.get(day, 0)
+                    daily_peak_scores[day] = max(current_peak, DENSITY_PRIORITY[density])
+    except (csv.Error, OSError) as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unable to read historical_pattern.csv: {exc}",
+        ) from exc
+
+    week: list[dict[str, str]] = []
+    density_by_score = {score: density for density, score in DENSITY_PRIORITY.items()}
+    for day in WEEK_DAYS:
+        peak_score = daily_peak_scores.get(day)
+        if peak_score is None:
+            raise HTTPException(
+                status_code=500,
+                detail=f"No open-hours historical density values found for '{day}'",
+            )
+
+        level = density_by_score[peak_score]
+        week.append({"day": day, "level": level})
+
+    return {"week": week}
+
+
 @app.on_event("startup")
 def preload_cv_model() -> None:
     global cv_startup_error
@@ -134,6 +224,11 @@ def _smooth_counts(sampled_counts: list[int]) -> int:
 @app.get("/monument-info")
 def get_monument_info() -> dict[str, Any]:
     return _load_monument_info()
+
+
+@app.get("/historical-pattern")
+def get_historical_pattern() -> dict[str, list[dict[str, str]]]:
+    return _load_weekly_historical_pattern()
 
 
 @app.get("/crowd-status")
