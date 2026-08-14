@@ -7,8 +7,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from .alert_service import check_and_get_alert, get_alert_events, trigger_sos_alert
@@ -221,6 +222,22 @@ def _smooth_counts(sampled_counts: list[int]) -> int:
     return smooth_counts(sampled_counts)
 
 
+def _get_annotated_frame(video_path: Path, group_threshold: int) -> bytes:
+    from .cv_engine import get_annotated_frame
+
+    return get_annotated_frame(str(video_path), group_threshold=group_threshold)
+
+
+def _stream_annotated_frames(video_path: Path, group_threshold: int, frame_skip: int):
+    from .cv_engine import stream_annotated_frames
+
+    return stream_annotated_frames(
+        str(video_path),
+        group_threshold=group_threshold,
+        frame_skip=frame_skip,
+    )
+
+
 @app.get("/monument-info")
 def get_monument_info() -> dict[str, Any]:
     return _load_monument_info()
@@ -282,6 +299,75 @@ def get_crowd_status(
             "eta_minutes": forecast["eta_minutes"],
         },
     }
+
+
+@app.get("/annotated-frame")
+def get_annotated_video_frame(
+    video: str | None = Query(
+        default=None,
+        description="Sample video to annotate: low_crowd or high_crowd",
+    ),
+    group_threshold: int = Query(default=5, ge=1),
+) -> Response:
+    if video is None:
+        allowed = ", ".join(sorted(SAMPLE_VIDEOS))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing video query parameter. Provide one of: {allowed}",
+        )
+
+    _set_active_video(video)
+    video_path = SAMPLE_VIDEOS[active_video_key]
+
+    try:
+        png_bytes = _get_annotated_frame(video_path, group_threshold)
+    except Exception as exc:
+        detail = cv_startup_error or str(exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Annotated frame generation failed for '{active_video_key}': {detail}",
+        ) from exc
+
+    return Response(content=png_bytes, media_type="image/png")
+
+
+@app.get("/annotated-stream")
+def get_annotated_video_stream(
+    video: str | None = Query(
+        default=None,
+        description="Sample video to stream with annotations: low_crowd or high_crowd",
+    ),
+    group_threshold: int = Query(default=5, ge=1),
+    frame_skip: int = Query(default=2, ge=1),
+) -> StreamingResponse:
+    if video is None:
+        allowed = ", ".join(sorted(SAMPLE_VIDEOS))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing video query parameter. Provide one of: {allowed}",
+        )
+
+    _set_active_video(video)
+    video_path = SAMPLE_VIDEOS[active_video_key]
+
+    try:
+        frame_stream = _stream_annotated_frames(video_path, group_threshold, frame_skip)
+        first_chunk = next(frame_stream)
+    except Exception as exc:
+        detail = cv_startup_error or str(exc)
+        raise HTTPException(
+            status_code=503,
+            detail=f"Annotated stream generation failed for '{active_video_key}': {detail}",
+        ) from exc
+
+    def stream_with_prefetched_chunk():
+        yield first_chunk
+        yield from frame_stream
+
+    return StreamingResponse(
+        stream_with_prefetched_chunk(),
+        media_type="multipart/x-mixed-replace; boundary=frame",
+    )
 
 
 @app.get("/alerts")
