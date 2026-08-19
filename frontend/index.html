@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#E8621A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>YatraSense</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23E8621A'/><text x='50' y='64' font-size='46' text-anchor='middle' fill='white' font-family='Arial'>Y</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="phone-ui" aria-label="Tourist home">
+      <header class="top-bar">
+        <a class="brand" href="index.html">YatraSense</a>
+        <button class="icon-button" type="button" aria-label="Notifications">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M10 21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </header>
+
+      <section class="card hero-card">
+        <div>
+          <span class="density-badge skeleton-badge" data-density-badge>Loading</span>
+        </div>
+        <div>
+          <h1>Explore Pune with calmer routes.</h1>
+          <p>Live crowd signals help you choose better timings around busy heritage places.</p>
+        </div>
+      </section>
+
+      <div class="warning-banner" data-backend-warning hidden>
+        Could not connect to backend. Make sure uvicorn is running on port 8000.
+      </div>
+
+      <label class="search-box" aria-label="Search destinations">
+        <span aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="m16.5 16.5 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </span>
+        <input type="search" placeholder="Search monuments, temples, museums">
+      </label>
+
+      <h2 class="section-title">Nearby Places</h2>
+
+      <section class="place-list">
+        <a class="card place-card" href="detail.html">
+          <div class="place-thumb" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24">
+              <path d="M4 20h16M6 18V9m4 9V9m4 9V9m4 9V9M3 9h18L12 4 3 9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="place-copy">
+            <h2>Shaniwarwada Fort</h2>
+            <p>1.2 km away, heritage fort</p>
+            <div class="place-meta">
+              <span class="pill">Open</span>
+              <span class="density-badge skeleton-badge" data-density-badge>Loading</span>
+            </div>
+          </div>
+        </a>
+
+        <article class="card place-card">
+          <div class="place-thumb" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24">
+              <path d="M4 20V8l4-2 4 2 4-2 4 2v12M8 20v-6h8v6M8 10h.01M12 10h.01M16 10h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="place-copy">
+            <h2>Aga Khan Palace</h2>
+            <p>4.5 km away, museum and palace</p>
+            <div class="place-meta">
+              <span class="pill">Open</span>
+              <span class="density-badge medium">MEDIUM</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="card place-card">
+          <div class="place-thumb" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24">
+              <path d="M12 3 5 10h3v10h8V10h3L12 3ZM4 21h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <div class="place-copy">
+            <h2>Parvati Hill Temple</h2>
+            <p>3.8 km away, temple viewpoint</p>
+            <div class="place-meta">
+              <span class="pill">Closes 8 PM</span>
+              <span class="density-badge high">HIGH</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <nav class="bottom-nav" aria-label="Bottom navigation">
+        <a class="active" href="index.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+          </svg>
+          <span>Home</span>
+        </a>
+        <a href="detail.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="m16.5 16.5 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <span>Explore</span>
+        </a>
+        <a href="#">
+          <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M10 21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <span>About</span>
+        </a>
+      </nav>
+    </section>
+
+    <aside class="detail-panel" aria-label="Travel summary">
+      <section class="card panel-header">
+        <div>
+          <h1>Tourist Crowd Assistant</h1>
+          <p class="meta-text ai-recommendation" data-ai-recommendation>
+            <span class="skeleton-line"></span>
+            <span class="skeleton-line short"></span>
+          </p>
+        </div>
+        <span class="density-badge skeleton-badge" data-density-badge>Loading</span>
+      </section>
+
+      <section class="card">
+        <h2 class="section-title">Today at a Glance</h2>
+        <div class="timeline" style="margin-top: 16px;">
+          <div class="timeline-row">
+            <span>09</span>
+            <div class="bar-track"><div class="bar-fill low"></div></div>
+            <strong>Low</strong>
+          </div>
+          <div class="timeline-row">
+            <span>13</span>
+            <div class="bar-track"><div class="bar-fill medium"></div></div>
+            <strong>Moderate</strong>
+          </div>
+          <div class="timeline-row">
+            <span>17</span>
+            <div class="bar-track"><div class="bar-fill high"></div></div>
+            <strong>High</strong>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#E8621A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Shaniwarwada Fort | YatraSense</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23E8621A'/><text x='50' y='64' font-size='46' text-anchor='middle' fill='white' font-family='Arial'>Y</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="detail">
+  <main class="app-shell detail-shell">
+    <header class="detail-top-bar">
+      <button class="icon-button back-button" type="button" data-back-button aria-label="Back to home">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15.5 19 8.5 12l7-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+      <div class="detail-nav-title" data-sticky-title>Shaniwarwada Fort</div>
+      <button class="icon-button share-action" type="button" aria-label="Share">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M16 8.5 8.5 13M16 15.5 8.5 11M18 6.5a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 18 6.5Zm-12 8a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 6 14.5Zm12 5.5a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 18 20Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+    </header>
+
+    <section class="place-hero">
+      <img src="images/shaniwarwada.jpg" alt="Shaniwarwada Fort" onerror="this.style.display='none'">
+      <div class="place-hero-overlay"></div>
+      <div class="place-hero-copy">
+        <h1 id="hero-title">Shaniwarwada Fort</h1>
+        <p>Pune, Maharashtra &middot; Est. 1732</p>
+        <div class="hero-status-row">
+          <span class="density-badge skeleton-badge" data-density-badge>Loading</span>
+          <span class="open-pill" data-open-pill>Open until ...</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="warning-banner" data-backend-warning hidden>
+      Could not connect to backend. Make sure uvicorn is running on port 8000.
+    </div>
+
+    <section class="smart-panel">
+      <div class="smart-panel-top">
+        <span class="smart-label">Smart Suggestion</span>
+        <span class="density-badge skeleton-badge" data-density-badge>Loading</span>
+      </div>
+      <h2 data-smart-headline>
+        <span class="skeleton-line"></span>
+        <span class="skeleton-line short"></span>
+      </h2>
+      <p data-smart-subline>
+        <span class="skeleton-line"></span>
+      </p>
+      <div class="smart-stats">
+        <span data-distance-pill>Distance: 1.2 km away</span>
+        <span data-hours-pill>Hours: Loading</span>
+        <span data-entry-pill>Entry: Loading</span>
+      </div>
+      <button class="btn-primary full-width" type="button" data-directions>Get Directions &#8594;</button>
+    </section>
+
+    <section class="detail-info-row" aria-label="Visit information">
+      <article class="card compact-info-card">
+        <span>Hours</span>
+        <strong data-info-field="hours"><span class="skeleton-rect"></span></strong>
+      </article>
+      <article class="card compact-info-card">
+        <span>Entry</span>
+        <strong data-info-field="entry"><span class="skeleton-rect"></span></strong>
+      </article>
+      <article class="card compact-info-card">
+        <span>Parking</span>
+        <strong data-info-field="parking"><span class="skeleton-rect"></span></strong>
+      </article>
+    </section>
+
+    <h2 class="detail-section-title">Location</h2>
+    <iframe
+      class="map-embed"
+      src="https://maps.google.com/maps?q=Shaniwarwada+Fort,Pune&z=16&output=embed"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      title="Shaniwarwada Fort map"></iframe>
+
+    <h2 class="detail-section-title">Photos</h2>
+    <section class="photo-strip" aria-label="Photos">
+      <figure class="photo-slot entrance">
+        <img src="images/shaniwarwada_entrance.jpg" alt="Shaniwarwada entrance" onerror="this.style.display='none'">
+        <figcaption>Entrance</figcaption>
+      </figure>
+      <figure class="photo-slot courtyard">
+        <img src="images/shaniwarwada_courtyard.jpg" alt="Shaniwarwada courtyard" onerror="this.style.display='none'">
+        <figcaption>Courtyard</figcaption>
+      </figure>
+      <figure class="photo-slot cannon">
+        <img src="images/shaniwarwada_cannon.jpg" alt="Shaniwarwada cannons" onerror="this.style.display='none'">
+        <figcaption>Cannons</figcaption>
+      </figure>
+      <figure class="photo-slot night">
+        <img src="images/shaniwarwada_night.jpg" alt="Shaniwarwada night view" onerror="this.style.display='none'">
+        <figcaption>Night View</figcaption>
+      </figure>
+    </section>
+
+    <h2 class="detail-section-title">Best Time to Visit</h2>
+    <section class="card weekly-card">
+      <div class="weekly-bars" data-weekly-bars></div>
+    </section>
+
+    <h2 class="detail-section-title">Visitor Reviews</h2>
+    <section class="reviews-list">
+      <article class="card review-card">
+        <div class="review-top">
+          <strong>Rohit S.</strong>
+          <span>5/5</span>
+        </div>
+        <p>Stunning fort with incredible history. Visit early morning to avoid the afternoon rush - the light is beautiful then too.</p>
+      </article>
+      <article class="card review-card">
+        <div class="review-top">
+          <strong>Priya M.</strong>
+          <span>4/5</span>
+        </div>
+        <p>Beautiful heritage site. Gets crowded on weekends. The sound &amp; light show in the evening is absolutely worth staying for.</p>
+      </article>
+    </section>
+
+    <nav class="bottom-nav" aria-label="Bottom navigation">
+      <a href="index.html">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 11 12 4l9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+        </svg>
+        <span>Home</span>
+      </a>
+      <a class="active" href="detail.html">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+          <path d="m16.5 16.5 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <span>Explore</span>
+      </a>
+      <a href="#">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M10 21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <span>About</span>
+      </a>
+    </nav>
+
+    <button class="sos-floating" type="button" data-sos-button>EMERGENCY HELP</button>
+    <div class="detail-bottom-spacer" aria-hidden="true"></div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

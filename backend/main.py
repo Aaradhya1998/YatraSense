@@ -27,6 +27,13 @@ SAMPLE_VIDEOS = {
     "low_crowd": SAMPLE_VIDEO_DIR / "low_crowd.mp4",
     "high_crowd": SAMPLE_VIDEO_DIR / "high_crowd.mp4",
 }
+VALID_VIDEOS = ["low_crowd", "high_crowd", "cam1", "cam2", "cam3", "cam4"]
+VIDEO_MAP = {
+    "cam1": "high_crowd",
+    "cam2": "low_crowd",
+    "cam3": "low_crowd",
+    "cam4": "low_crowd",
+}
 WEEK_DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 DENSITY_PRIORITY = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
 
@@ -55,13 +62,13 @@ class SosRequest(BaseModel):
 def _resolve_video_key(video: str) -> str:
     normalized = video.strip().removesuffix(".mp4")
     if not normalized:
-        allowed = ", ".join(sorted(SAMPLE_VIDEOS))
+        allowed = ", ".join(VALID_VIDEOS)
         raise HTTPException(
             status_code=400,
             detail=f"Missing video query parameter. Provide one of: {allowed}",
         )
-    if normalized not in SAMPLE_VIDEOS:
-        allowed = ", ".join(sorted(SAMPLE_VIDEOS))
+    if normalized not in VALID_VIDEOS:
+        allowed = ", ".join(VALID_VIDEOS)
         raise HTTPException(
             status_code=400,
             detail=f"Unknown sample video '{video}'. Allowed values: {allowed}",
@@ -73,6 +80,10 @@ def _set_active_video(video: str) -> str:
     global active_video_key
     active_video_key = _resolve_video_key(video)
     return active_video_key
+
+
+def _mapped_video_key(video: str) -> str:
+    return VIDEO_MAP.get(video, video)
 
 
 def _load_monument_info() -> dict[str, Any]:
@@ -252,27 +263,28 @@ def get_historical_pattern() -> dict[str, list[dict[str, str]]]:
 def get_crowd_status(
     video: str | None = Query(
         default=None,
-        description="Sample video to analyze: low_crowd or high_crowd",
+        description="Sample video or camera ID to analyze",
     ),
 ) -> dict[str, Any]:
     if video is None:
-        allowed = ", ".join(sorted(SAMPLE_VIDEOS))
+        allowed = ", ".join(VALID_VIDEOS)
         raise HTTPException(
             status_code=400,
             detail=f"Missing video query parameter. Provide one of: {allowed}",
         )
 
     _set_active_video(video)
+    video_key = _mapped_video_key(active_video_key)
 
     # Stage-failure insurance only: DEMO_SAFE_MODE defaults to false and
     # swaps live CV/prediction for last-known-good JSON responses. Do not
     # enable this during actual judging unless live detection breaks or is too slow.
     if _demo_safe_mode_enabled():
-        demo_response = _load_demo_fallback_status(active_video_key)
+        demo_response = _load_demo_fallback_status(video_key)
         check_and_get_alert(demo_response["current_density"])
         return demo_response
 
-    video_path = SAMPLE_VIDEOS[active_video_key]
+    video_path = SAMPLE_VIDEOS[video_key]
 
     try:
         sampled_counts = _get_sampled_counts(video_path)
@@ -281,7 +293,7 @@ def get_crowd_status(
         detail = cv_startup_error or str(exc)
         raise HTTPException(
             status_code=503,
-            detail=f"CV pipeline failed for '{active_video_key}': {detail}",
+            detail=f"CV pipeline failed for '{video_key}': {detail}",
         ) from exc
 
     current_density = classify_density(person_count_estimate)
@@ -305,19 +317,20 @@ def get_crowd_status(
 def get_annotated_video_frame(
     video: str | None = Query(
         default=None,
-        description="Sample video to annotate: low_crowd or high_crowd",
+        description="Sample video or camera ID to annotate",
     ),
     group_threshold: int = Query(default=5, ge=1),
 ) -> Response:
     if video is None:
-        allowed = ", ".join(sorted(SAMPLE_VIDEOS))
+        allowed = ", ".join(VALID_VIDEOS)
         raise HTTPException(
             status_code=400,
             detail=f"Missing video query parameter. Provide one of: {allowed}",
         )
 
     _set_active_video(video)
-    video_path = SAMPLE_VIDEOS[active_video_key]
+    video_key = _mapped_video_key(active_video_key)
+    video_path = SAMPLE_VIDEOS[video_key]
 
     try:
         png_bytes = _get_annotated_frame(video_path, group_threshold)
@@ -325,7 +338,7 @@ def get_annotated_video_frame(
         detail = cv_startup_error or str(exc)
         raise HTTPException(
             status_code=503,
-            detail=f"Annotated frame generation failed for '{active_video_key}': {detail}",
+            detail=f"Annotated frame generation failed for '{video_key}': {detail}",
         ) from exc
 
     return Response(content=png_bytes, media_type="image/png")
@@ -335,20 +348,21 @@ def get_annotated_video_frame(
 def get_annotated_video_stream(
     video: str | None = Query(
         default=None,
-        description="Sample video to stream with annotations: low_crowd or high_crowd",
+        description="Sample video or camera ID to stream with annotations",
     ),
     group_threshold: int = Query(default=5, ge=1),
     frame_skip: int = Query(default=2, ge=1),
 ) -> StreamingResponse:
     if video is None:
-        allowed = ", ".join(sorted(SAMPLE_VIDEOS))
+        allowed = ", ".join(VALID_VIDEOS)
         raise HTTPException(
             status_code=400,
             detail=f"Missing video query parameter. Provide one of: {allowed}",
         )
 
     _set_active_video(video)
-    video_path = SAMPLE_VIDEOS[active_video_key]
+    video_key = _mapped_video_key(active_video_key)
+    video_path = SAMPLE_VIDEOS[video_key]
 
     try:
         frame_stream = _stream_annotated_frames(video_path, group_threshold, frame_skip)
@@ -357,7 +371,7 @@ def get_annotated_video_stream(
         detail = cv_startup_error or str(exc)
         raise HTTPException(
             status_code=503,
-            detail=f"Annotated stream generation failed for '{active_video_key}': {detail}",
+            detail=f"Annotated stream generation failed for '{video_key}': {detail}",
         ) from exc
 
     def stream_with_prefetched_chunk():
