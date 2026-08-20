@@ -706,32 +706,50 @@ input {
 }
 
 .weekly-bars {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  height: 124px;
-  margin-bottom: 8px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: end;
+  gap: 8px;
+  min-height: 142px;
+  padding-top: 22px;
 }
 
-.weekly-bar-column {
+.weekly-day-group {
   position: relative;
   display: flex;
-  flex: 1;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-end;
+  gap: 7px;
   min-width: 0;
+}
+
+.weekly-mini-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: 84px;
+}
+
+.weekly-bar-button {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  width: 8px;
+  height: 84px;
   border: none;
   background: transparent;
-  padding: 0 4px;
+  padding: 0;
   cursor: pointer;
 }
 
 .weekly-bar {
-  width: 100%;
-  max-width: 32px;
+  display: block;
+  width: 8px;
   height: 0;
-  border-radius: 6px 6px 0 0;
+  border-radius: 4px 4px 0 0;
   transition: height 0.6s ease;
 }
 
@@ -747,16 +765,13 @@ input {
   background: var(--density-high);
 }
 
-.weekly-bar.today {
-  border: 2px solid var(--accent);
-}
-
 .today-label {
   position: absolute;
-  top: -18px;
+  top: -20px;
   color: var(--accent);
   font-family: 'DM Mono', monospace;
   font-size: 10px;
+  font-weight: 700;
 }
 
 .weekly-day {
@@ -764,9 +779,14 @@ input {
   font-size: 11px;
 }
 
+.weekly-day-group.today .weekly-day {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .bar-tooltip-detail {
   position: absolute;
-  bottom: 118px;
+  bottom: 88px;
   left: 50%;
   z-index: 2;
   border-radius: 8px;
@@ -781,9 +801,44 @@ input {
   white-space: nowrap;
 }
 
-.weekly-bar-column.show-tooltip .bar-tooltip-detail {
+.weekly-bar-button.show-tooltip .bar-tooltip-detail {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+.weekly-legend {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.weekly-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.weekly-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.weekly-legend-dot.low {
+  background: var(--density-low);
+}
+
+.weekly-legend-dot.medium {
+  background: var(--density-medium);
+}
+
+.weekly-legend-dot.high {
+  background: var(--density-high);
 }
 
 .reviews-list {

@@ -22,17 +22,14 @@ DATA_DIR = PROJECT_ROOT / "data"
 MONUMENT_INFO_PATH = DATA_DIR / "monument_info.json"
 HISTORICAL_PATTERN_PATH = DATA_DIR / "historical_pattern.csv"
 DEMO_FALLBACK_DIR = DATA_DIR / "demo_fallback"
-SAMPLE_VIDEO_DIR = DATA_DIR / "sample_videos"
-SAMPLE_VIDEOS = {
-    "low_crowd": SAMPLE_VIDEO_DIR / "low_crowd.mp4",
-    "high_crowd": SAMPLE_VIDEO_DIR / "high_crowd.mp4",
-}
 VALID_VIDEOS = ["low_crowd", "high_crowd", "cam1", "cam2", "cam3", "cam4"]
 VIDEO_MAP = {
-    "cam1": "high_crowd",
-    "cam2": "low_crowd",
-    "cam3": "low_crowd",
-    "cam4": "low_crowd",
+    "low_crowd": "data/videos/low_crowd.mp4",
+    "high_crowd": "data/videos/high_crowd.mp4",
+    "cam1": "data/videos/cam1.mp4",
+    "cam2": "data/videos/cam2.mp4",
+    "cam3": "data/videos/cam3.mp4",
+    "cam4": "data/videos/cam4.mp4",
 }
 WEEK_DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 DENSITY_PRIORITY = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
@@ -82,8 +79,8 @@ def _set_active_video(video: str) -> str:
     return active_video_key
 
 
-def _mapped_video_key(video: str) -> str:
-    return VIDEO_MAP.get(video, video)
+def _resolve_video_path(video: str) -> Path:
+    return PROJECT_ROOT / VIDEO_MAP.get(video, f"data/videos/{video}.mp4")
 
 
 def _load_monument_info() -> dict[str, Any]:
@@ -104,8 +101,7 @@ def _demo_safe_mode_enabled() -> bool:
     return os.getenv("DEMO_SAFE_MODE", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _load_demo_fallback_status(video_key: str) -> dict[str, Any]:
-    fallback_path = DEMO_FALLBACK_DIR / f"{video_key}.json"
+def _load_demo_fallback_status(fallback_path: Path, video_key: str) -> dict[str, Any]:
     if not fallback_path.exists():
         raise HTTPException(
             status_code=500,
@@ -274,17 +270,18 @@ def get_crowd_status(
         )
 
     _set_active_video(video)
-    video_key = _mapped_video_key(active_video_key)
+    video_key = active_video_key
 
     # Stage-failure insurance only: DEMO_SAFE_MODE defaults to false and
     # swaps live CV/prediction for last-known-good JSON responses. Do not
     # enable this during actual judging unless live detection breaks or is too slow.
     if _demo_safe_mode_enabled():
-        demo_response = _load_demo_fallback_status(video_key)
+        fallback_path = DEMO_FALLBACK_DIR / f"{video_key}.json"
+        demo_response = _load_demo_fallback_status(fallback_path, video_key)
         check_and_get_alert(demo_response["current_density"])
         return demo_response
 
-    video_path = SAMPLE_VIDEOS[video_key]
+    video_path = _resolve_video_path(video_key)
 
     try:
         sampled_counts = _get_sampled_counts(video_path)
@@ -329,8 +326,8 @@ def get_annotated_video_frame(
         )
 
     _set_active_video(video)
-    video_key = _mapped_video_key(active_video_key)
-    video_path = SAMPLE_VIDEOS[video_key]
+    video_key = active_video_key
+    video_path = _resolve_video_path(video_key)
 
     try:
         png_bytes = _get_annotated_frame(video_path, group_threshold)
@@ -351,7 +348,7 @@ def get_annotated_video_stream(
         description="Sample video or camera ID to stream with annotations",
     ),
     group_threshold: int = Query(default=5, ge=1),
-    frame_skip: int = Query(default=2, ge=1),
+    frame_skip: int = Query(default=1, ge=1),
 ) -> StreamingResponse:
     if video is None:
         allowed = ", ".join(VALID_VIDEOS)
@@ -361,8 +358,8 @@ def get_annotated_video_stream(
         )
 
     _set_active_video(video)
-    video_key = _mapped_video_key(active_video_key)
-    video_path = SAMPLE_VIDEOS[video_key]
+    video_key = active_video_key
+    video_path = _resolve_video_path(video_key)
 
     try:
         frame_stream = _stream_annotated_frames(video_path, group_threshold, frame_skip)
@@ -381,6 +378,7 @@ def get_annotated_video_stream(
     return StreamingResponse(
         stream_with_prefetched_chunk(),
         media_type="multipart/x-mixed-replace; boundary=frame",
+        headers={"Cache-Control": "no-cache, no-store"},
     )
 
 

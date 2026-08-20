@@ -4,8 +4,8 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-LOW_THRESHOLD = 10
-HIGH_THRESHOLD = 25
+LOW_THRESHOLD = 3
+HIGH_THRESHOLD = 11
 
 
 def classify_density(count: int) -> str:

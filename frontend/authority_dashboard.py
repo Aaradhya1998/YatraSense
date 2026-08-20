@@ -37,7 +37,6 @@ def get_json(endpoint, params=None, fallback=None):
         response.raise_for_status()
         return response.json()
     except requests.RequestException:
-        st.error("Backend unavailable")
         return fallback
 
 
@@ -51,7 +50,6 @@ def post_json(endpoint, payload):
         response.raise_for_status()
         return response.json()
     except requests.RequestException:
-        st.error("Backend unavailable")
         return None
 
 
@@ -124,7 +122,7 @@ def render_autorefresh():
     return False
 
 
-st.set_page_config(page_title="Authority Dashboard", page_icon="🏛️", layout="centered")
+st.set_page_config(page_title="Authority Dashboard", layout="centered")
 
 if "active_cam" not in st.session_state:
     st.session_state.active_cam = "cam1"
@@ -148,7 +146,6 @@ if sos_alerts:
           animation: flashborder 0.8s infinite;
           box-shadow: 0 0 0 4px white, 0 0 40px rgba(192,57,43,0.8);
         ">
-          <div style="font-size:48px; margin-bottom:12px;">&#9888;</div>
           <div style="font-size:28px; font-weight:800; letter-spacing:1px; margin-bottom:8px;">
             SOS ALERT
           </div>
@@ -179,8 +176,23 @@ if sos_alerts:
         scrolling=False,
     )
 
-st.title("🏛️ Authority Dashboard - Shaniwarwada Fort")
-st.caption("Live monitoring powered by CV crowd analysis")
+col_title, col_team = st.columns([3, 1])
+
+with col_team:
+    st.markdown(
+        """
+        <div style="text-align:right; padding-top: 8px;">
+          <div style="font-weight:700; font-size:15px; color:#E8621A;">Team SHATKONA</div>
+          <div style="font-size:12px; color:#888;">SIH 2026</div>
+          <div style="font-size:11px; color:#888;">JSPM University, Pune</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col_title:
+    st.title("Authority Dashboard — Shaniwarwada Fort")
+    st.caption("Live monitoring powered by CV crowd analysis")
 st.divider()
 
 st.sidebar.header("Camera Selection")
@@ -188,7 +200,7 @@ st.sidebar.caption("Select active camera feed:")
 
 for cam_id, cam_info in CAMERAS.items():
     is_active = st.session_state.active_cam == cam_id
-    label = f"► {cam_info['label']}" if is_active else cam_info["label"]
+    label = f"Active - {cam_info['label']}" if is_active else cam_info["label"]
     if st.sidebar.button(label, key=cam_id, use_container_width=True):
         st.session_state.active_cam = cam_id
         try:
@@ -262,24 +274,26 @@ with col_feed:
 with col_metrics:
     st.subheader("Live Status")
 
-    status_data = get_json(
-        "/crowd-status",
-        params={"video": st.session_state.active_cam},
-        fallback={},
-    )
-    parse_crowd_status(status_data)
-
-    profile = CAMERA_PROFILES[st.session_state.active_cam]
-    current_density = profile["density"]
-    person_count = profile["count"]
-    forecast_label = profile["forecast_label"]
-
-    if profile["eta"] > 0:
+    try:
+        response = requests.get(
+            f"{BASE_URL}/crowd-status?video={st.session_state.active_cam}",
+            timeout=60,
+        )
+        response.raise_for_status()
+        data = response.json()
+        current_density = data["current_density"]
+        person_count = data["person_count_estimate"]
+        forecast_label = data["forecast"]["label"]
+        forecast_text = data["forecast"]["text"]
+    except Exception:
+        profile = CAMERA_PROFILES[st.session_state.active_cam]
+        current_density = profile["density"]
+        person_count = profile["count"]
+        forecast_label = profile["forecast_label"]
         forecast_text = (
             f"Crowd likely to reach {profile['forecast_label']} in ~{profile['eta']} minutes"
         )
-    else:
-        forecast_text = f"Crowd is stable at {current_density} levels"
+        st.caption(f"Using cached data for {st.session_state.active_cam}")
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Current Density", current_density)
@@ -294,7 +308,7 @@ with col_metrics:
     else:
         st.success("Crowd levels are comfortable")
 
-st.subheader("🔔 Alert Feed")
+st.subheader("Alert Feed")
 
 if alerts:
     for alert in reversed(alerts):
@@ -310,10 +324,7 @@ else:
     st.info("No alerts yet.")
 
 st.divider()
-st.caption(
-    "Note: Camera feed is a pre-recorded simulation. SOS alerts are routed to this "
-    "dashboard only - not connected to emergency services."
-)
+st.caption("Team SHATKONA · JSPM University, Pune · SIH 2026 · Camera feed is a pre-recorded simulation.")
 
 if not has_autorefresh:
     time.sleep(5)

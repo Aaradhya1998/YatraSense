@@ -262,7 +262,7 @@ def get_annotated_frame(video_path: str, group_threshold: int = 5) -> bytes:
 def stream_annotated_frames(
     video_path: str,
     group_threshold: int = 5,
-    frame_skip: int = 2,
+    frame_skip: int = 1,
 ) -> Iterable[bytes]:
     _validate_positive_number(group_threshold, "group_threshold")
     _validate_positive_number(frame_skip, "frame_skip")
@@ -279,6 +279,8 @@ def stream_annotated_frames(
         capture = cv2.VideoCapture(str(path))
     except cv2.error as exc:
         raise CVPipelineError(f"Unable to initialize video capture for: {path}") from exc
+
+    capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     if not capture.isOpened():
         raise CVPipelineError(f"Unable to open sample video file: {path}")
@@ -311,7 +313,11 @@ def stream_annotated_frames(
 
             _draw_person_annotations(frame, last_boxes, group_threshold)
 
-            success, encoded_frame = cv2.imencode(".jpg", frame)
+            success, encoded_frame = cv2.imencode(
+                ".jpg",
+                frame,
+                [int(cv2.IMWRITE_JPEG_QUALITY), 60],
+            )
             if not success:
                 raise CVPipelineError("Unable to encode annotated frame as JPEG")
 

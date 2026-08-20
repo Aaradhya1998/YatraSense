@@ -66,6 +66,35 @@ function showToast(message, isError = false) {
   }, 2800);
 }
 
+function showAuthorityCallButton() {
+  const existing = document.querySelector('[data-authority-call-button]');
+  if (existing) existing.remove();
+
+  const callBtn = document.createElement('div');
+  callBtn.dataset.authorityCallButton = 'true';
+  callBtn.style.cssText = `
+    position: fixed;
+    bottom: 140px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--density-high);
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 14px 32px;
+    border-radius: 24px;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 4px 20px rgba(192,57,43,0.5);
+    white-space: nowrap;
+  `;
+  callBtn.textContent = 'Call Authority Now';
+  callBtn.onclick = () => window.open('tel:+911800110');
+  document.body.appendChild(callBtn);
+  setTimeout(() => callBtn.remove(), 8000);
+}
+
 function safeText(value, fallback = 'Unavailable') {
   if (value === null || value === undefined || value === '') return fallback;
   if (typeof value === 'object') return fallback;
@@ -215,50 +244,91 @@ function populateFallbackData() {
   if (smartHeadline) smartHeadline.textContent = 'Backend offline - live data unavailable';
 }
 
-function renderWeeklyGraph(patternData) {
+function renderWeeklyGraph() {
   const container = document.querySelector('[data-weekly-bars]');
   if (!container) return;
 
-  const week = Array.isArray(patternData.week) ? patternData.week : [];
+  const HOURLY_PATTERN = {
+    Mon: { 9: 'LOW', 11: 'MEDIUM', 13: 'MEDIUM', 15: 'LOW', 17: 'LOW' },
+    Tue: { 9: 'LOW', 11: 'MEDIUM', 13: 'MEDIUM', 15: 'LOW', 17: 'LOW' },
+    Wed: { 9: 'LOW', 11: 'MEDIUM', 13: 'HIGH', 15: 'MEDIUM', 17: 'LOW' },
+    Thu: { 9: 'LOW', 11: 'MEDIUM', 13: 'MEDIUM', 15: 'LOW', 17: 'LOW' },
+    Fri: { 9: 'MEDIUM', 11: 'HIGH', 13: 'HIGH', 15: 'HIGH', 17: 'MEDIUM' },
+    Sat: { 9: 'MEDIUM', 11: 'HIGH', 13: 'HIGH', 15: 'HIGH', 17: 'HIGH' },
+    Sun: { 9: 'LOW', 11: 'HIGH', 13: 'HIGH', 15: 'HIGH', 17: 'MEDIUM' }
+  };
+  const hours = [9, 11, 13, 15, 17];
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
-  const heights = { LOW: 33, MEDIUM: 66, HIGH: 100 };
+  const heights = { LOW: 30, MEDIUM: 55, HIGH: 80 };
+  const labels = { LOW: 'Low', MEDIUM: 'Moderate', HIGH: 'High' };
 
   container.innerHTML = '';
-  week.forEach(item => {
-    const day = safeText(item.day, '');
-    const level = normalizeDensity(item.level);
-    const column = document.createElement('button');
-    column.className = 'weekly-bar-column';
-    column.type = 'button';
+  Object.entries(HOURLY_PATTERN).forEach(([day, dayPattern]) => {
+    const group = document.createElement('div');
+    group.className = `weekly-day-group${day === today ? ' today' : ''}`;
 
-    const tooltip = document.createElement('span');
-    tooltip.className = 'bar-tooltip-detail';
-    tooltip.textContent = `Typically ${level} on ${day}s`;
+    const bars = document.createElement('div');
+    bars.className = 'weekly-mini-bars';
 
-    const todayLabel = document.createElement('span');
-    todayLabel.className = 'today-label';
-    todayLabel.textContent = 'Today';
+    if (day === today) {
+      const todayLabel = document.createElement('span');
+      todayLabel.className = 'today-label';
+      todayLabel.textContent = 'Today';
+      group.append(todayLabel);
+    }
 
-    const bar = document.createElement('span');
-    bar.className = `weekly-bar ${level.toLowerCase()}${day === today ? ' today' : ''}`;
-    bar.style.height = '0px';
-    requestAnimationFrame(() => {
-      bar.style.height = `${heights[level]}px`;
+    hours.forEach(hour => {
+      const level = normalizeDensity(dayPattern[hour]);
+      const barButton = document.createElement('button');
+      barButton.className = 'weekly-bar-button';
+      barButton.type = 'button';
+      barButton.setAttribute('aria-label', `typically ${level.toLowerCase()} at ${formatGraphHour(hour)} on ${day}s`);
+
+      const tooltip = document.createElement('span');
+      tooltip.className = 'bar-tooltip-detail';
+      tooltip.textContent = `typically ${level.toLowerCase()} at ${formatGraphHour(hour)} on ${day}s`;
+
+      const bar = document.createElement('span');
+      bar.className = `weekly-bar ${level.toLowerCase()}`;
+      bar.style.height = '0px';
+      requestAnimationFrame(() => {
+        bar.style.height = `${heights[level]}px`;
+      });
+
+      barButton.append(tooltip, bar);
+      barButton.addEventListener('click', () => {
+        container.querySelectorAll('.weekly-bar-button').forEach(item => item.classList.remove('show-tooltip'));
+        barButton.classList.add('show-tooltip');
+      });
+      bars.appendChild(barButton);
     });
 
     const label = document.createElement('span');
     label.className = 'weekly-day';
     label.textContent = day;
 
-    column.append(tooltip);
-    if (day === today) column.append(todayLabel);
-    column.append(bar, label);
-    column.addEventListener('click', () => {
-      container.querySelectorAll('.weekly-bar-column').forEach(item => item.classList.remove('show-tooltip'));
-      column.classList.add('show-tooltip');
-    });
-    container.appendChild(column);
+    group.append(bars, label);
+    container.appendChild(group);
   });
+
+  const legend = document.createElement('div');
+  legend.className = 'weekly-legend';
+  ['LOW', 'MEDIUM', 'HIGH'].forEach(level => {
+    const item = document.createElement('span');
+    item.className = 'weekly-legend-item';
+    const dot = document.createElement('span');
+    dot.className = `weekly-legend-dot ${level.toLowerCase()}`;
+    item.append(dot, document.createTextNode(labels[level]));
+    legend.appendChild(item);
+  });
+  container.appendChild(legend);
+}
+
+function formatGraphHour(hour) {
+  if (hour === 13) return '1pm';
+  if (hour === 15) return '3pm';
+  if (hour === 17) return '5pm';
+  return `${hour}am`;
 }
 
 function showBackendError() {
@@ -405,6 +475,7 @@ function initSOSGesture() {
       await postSOS('Tourist SOS triggered');
       hideSOS();
       showToast('Help alert sent to authorities');
+      showAuthorityCallButton();
     } catch (error) {
       resetSOS();
       showToast('Unable to send SOS alert', true);
