@@ -348,7 +348,7 @@ def get_annotated_video_stream(
         description="Sample video or camera ID to stream with annotations",
     ),
     group_threshold: int = Query(default=5, ge=1),
-    frame_skip: int = Query(default=1, ge=1),
+    frame_skip: int = Query(default=2, ge=1),
 ) -> StreamingResponse:
     if video is None:
         allowed = ", ".join(VALID_VIDEOS)
@@ -378,7 +378,11 @@ def get_annotated_video_stream(
     return StreamingResponse(
         stream_with_prefetched_chunk(),
         media_type="multipart/x-mixed-replace; boundary=frame",
-        headers={"Cache-Control": "no-cache, no-store"},
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

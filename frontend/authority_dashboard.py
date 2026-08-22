@@ -218,7 +218,7 @@ st.sidebar.caption(f"Active: {CAMERAS[st.session_state.active_cam]['label']}")
 
 has_autorefresh = render_autorefresh()
 
-col_feed, col_metrics = st.columns([1.2, 1])
+col_feed, col_metrics, col_sos = st.columns([1.2, 1, 0.8])
 
 with col_feed:
     st.subheader("Live Camera Feed")
@@ -307,6 +307,55 @@ with col_metrics:
         st.warning("Moderate crowd levels - monitor closely")
     else:
         st.success("Crowd levels are comfortable")
+
+with col_sos:
+    st.subheader("SOS Alerts")
+
+    try:
+        alerts_response = requests.get("http://localhost:8000/alerts", timeout=5)
+        all_alerts = alerts_response.json()
+        sos_alerts = [a for a in all_alerts if a.get("type") == "SOS"]
+    except Exception:
+        sos_alerts = []
+
+    if sos_alerts:
+        st.markdown(
+            """
+            <style>
+              @keyframes pulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0.75); }
+                50% { box-shadow: 0 0 0 8px rgba(255,107,107,0); }
+              }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        for alert in reversed(sos_alerts):
+            st.markdown(
+                f"""
+                <div style="
+                  background: #C0392B;
+                  border-radius: 12px;
+                  padding: 16px;
+                  margin-bottom: 12px;
+                  animation: pulse 1s infinite;
+                  border: 2px solid #ff6b6b;
+                ">
+                  <div style="color:white; font-weight:800; font-size:16px; margin-bottom:6px;">
+                    SOS ALERT
+                  </div>
+                  <div style="color:white; font-size:13px; line-height:1.35; margin-bottom:8px;">
+                    {alert.get("message", "Tourist emergency reported")}
+                  </div>
+                  <div style="color:rgba(255,255,255,0.75); font-size:11px; font-family:monospace;">
+                    {alert.get("timestamp", "-")}
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    else:
+        st.info("No SOS alerts")
 
 st.subheader("Alert Feed")
 

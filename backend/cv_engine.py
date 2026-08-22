@@ -19,6 +19,7 @@ DEFAULT_ROLLING_WINDOW = int(os.getenv("CV_ROLLING_WINDOW", "5"))
 DEFAULT_SAMPLE_INTERVAL_SECONDS = float(os.getenv("CV_SAMPLE_INTERVAL_SECONDS", "1.0"))
 DEFAULT_MAX_SAMPLED_FRAMES = int(os.getenv("CV_MAX_SAMPLED_FRAMES", "12"))
 DEFAULT_CLUSTER_DISTANCE_PIXELS = 150
+YOLO_INFERENCE_SIZE = (640, 360)
 PERSON_CLASS_ID = 0
 
 _model: YOLO | None = None
@@ -45,6 +46,7 @@ def _get_model() -> YOLO:
     if _model is None:
         try:
             _model = YOLO(_resolve_model_path())
+            _model.overrides["verbose"] = False
         except Exception as exc:
             raise CVPipelineError(f"Unable to load YOLO model: {exc}") from exc
     return _model
@@ -155,9 +157,15 @@ def _read_representative_frame(video_path: Path) -> object:
 
 
 def _detect_person_boxes(frame: object, model: YOLO, confidence: float) -> list[tuple[int, int, int, int]]:
+    original_height, original_width = frame.shape[:2]
+    inference_width, inference_height = YOLO_INFERENCE_SIZE
+    width_scale = original_width / inference_width
+    height_scale = original_height / inference_height
+    frame_small = cv2.resize(frame, YOLO_INFERENCE_SIZE)
+
     try:
         results = model.predict(
-            source=frame,
+            source=frame_small,
             classes=[PERSON_CLASS_ID],
             conf=confidence,
             verbose=False,
@@ -168,10 +176,18 @@ def _detect_person_boxes(frame: object, model: YOLO, confidence: float) -> list[
     if not results or results[0].boxes is None:
         return []
 
-    return [
-        tuple(round(value) for value in box)
-        for box in results[0].boxes.xyxy.cpu().tolist()
-    ]
+    boxes: list[tuple[int, int, int, int]] = []
+    for x1, y1, x2, y2 in results[0].boxes.xyxy.cpu().tolist():
+        boxes.append(
+            (
+                round(x1 * width_scale),
+                round(y1 * height_scale),
+                round(x2 * width_scale),
+                round(y2 * height_scale),
+            )
+        )
+
+    return boxes
 
 
 def _find_person_clusters(
@@ -262,7 +278,7 @@ def get_annotated_frame(video_path: str, group_threshold: int = 5) -> bytes:
 def stream_annotated_frames(
     video_path: str,
     group_threshold: int = 5,
-    frame_skip: int = 1,
+    frame_skip: int = 2,
 ) -> Iterable[bytes]:
     _validate_positive_number(group_threshold, "group_threshold")
     _validate_positive_number(frame_skip, "frame_skip")
@@ -313,11 +329,8 @@ def stream_annotated_frames(
 
             _draw_person_annotations(frame, last_boxes, group_threshold)
 
-            success, encoded_frame = cv2.imencode(
-                ".jpg",
-                frame,
-                [int(cv2.IMWRITE_JPEG_QUALITY), 60],
-            )
+            encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 50]
+            success, encoded_frame = cv2.imencode(".jpg", frame, encode_param)
             if not success:
                 raise CVPipelineError("Unable to encode annotated frame as JPEG")
 
