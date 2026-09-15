@@ -1,4 +1,4 @@
-# [Project Name TBD] — Crowd Intelligence Platform for Heritage Tourism
+YatraSense — Crowd Intelligence Platform for Heritage Tourism
 
 A dual-interface system that helps tourists know the best time to visit a monument, and helps site authorities monitor and respond to crowd density in real time — piloted at Shaniwarwada Fort, Pune.
 
