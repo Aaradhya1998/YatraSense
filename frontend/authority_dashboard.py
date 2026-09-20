@@ -357,6 +357,76 @@ with col_sos:
     else:
         st.info("No SOS alerts")
 
+st.divider()
+st.subheader("GPS-Based Crowd Estimation")
+st.caption("For monuments without cameras - crowd estimated from tourist device locations")
+
+col_gps1, col_gps2 = st.columns([1, 2])
+
+with col_gps1:
+    st.markdown(
+        """
+        <div style="background:rgba(107,143,94,0.1); border-radius:12px; padding:16px; border:1px solid rgba(107,143,94,0.3);">
+          <div style="font-size:11px; color:#6B8F5E; font-weight:600; margin-bottom:8px;">HOW IT WORKS</div>
+          <div style="font-size:13px; color:white; line-height:1.6;">
+            Tourist opens app -> GPS sent silently -> Backend counts phones within 100m -> Crowd density estimated
+          </div>
+          <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:8px;">
+            Zero hardware - Works at any monument - Self-improving
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+with col_gps2:
+    try:
+        gps_response = requests.get(
+            f"{BASE_URL}/live-density?lat=18.5195&lng=73.8553",
+            timeout=5,
+        )
+        gps_response.raise_for_status()
+        gps_data = gps_response.json()
+
+        level = gps_data.get("density_level", "LOW")
+        count = gps_data.get("gps_crowd_count", 0)
+
+        col_a, col_b, col_c = st.columns(3)
+        col_a.metric("GPS Crowd Count", f"~{count} devices")
+        col_b.metric("Density Level", level)
+        col_c.metric("Coverage Radius", "100m")
+
+        if level == "HIGH":
+            st.error("HIGH crowd detected via GPS - consider deploying staff")
+        elif level == "MEDIUM":
+            st.warning("Moderate crowd detected via GPS")
+        else:
+            st.success("Low crowd levels detected via GPS")
+
+        st.caption(
+            f"Shaniwarwada Fort - Last 15 minutes - {gps_data.get('window_minutes')}min window"
+        )
+    except Exception:
+        st.info("GPS density data unavailable - backend offline")
+
+st.markdown(
+    """
+    <div style="margin-top:16px; padding:12px; background:rgba(255,255,255,0.05); border-radius:8px;">
+      <div style="font-size:12px; color:rgba(255,255,255,0.5); margin-bottom:8px;">
+        GPS Mode enables coverage at camera-less heritage sites:
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <span style="background:rgba(232,98,26,0.2); color:#E8621A; padding:4px 12px; border-radius:24px; font-size:12px;">Sinhagad Fort</span>
+        <span style="background:rgba(232,98,26,0.2); color:#E8621A; padding:4px 12px; border-radius:24px; font-size:12px;">Rajgad Fort</span>
+        <span style="background:rgba(232,98,26,0.2); color:#E8621A; padding:4px 12px; border-radius:24px; font-size:12px;">Torna Fort</span>
+        <span style="background:rgba(232,98,26,0.2); color:#E8621A; padding:4px 12px; border-radius:24px; font-size:12px;">Lohagad Fort</span>
+        <span style="background:rgba(232,98,26,0.2); color:#E8621A; padding:4px 12px; border-radius:24px; font-size:12px;">+3,689 ASI monuments</span>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.subheader("Alert Feed")
 
 if alerts:

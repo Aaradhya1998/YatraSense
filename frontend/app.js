@@ -24,6 +24,77 @@ async function fetchAlerts() {
   const res = await fetch(`${BASE_URL}/alerts`);
   return readJson(res);
 }
+function getDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lat2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + 
+            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * 
+            Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function sendGPSCheckin() {
+  if (!navigator.geolocation) return;
+  
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    
+   
+    const MONUMENT_LAT = 18.5195;
+    const MONUMENT_LNG = 73.8553;
+    const MAX_DISTANCE = 500; // only checkin if within 500m
+    
+    const distance = getDistance(lat, lng, MONUMENT_LAT, MONUMENT_LNG);
+    
+    if (distance > MAX_DISTANCE) {
+      console.log(`Too far from monument (${Math.round(distance)}m) — checkin skipped`);
+      return;
+    }
+    
+    // Within 500m — send checkin
+    await fetch(`${BASE_URL}/checkin`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng, place_id: 'shaniwarwada' })
+    });
+  });
+}
+
+async function sendGPSCheckin() {
+  if (!navigator.geolocation) return;
+
+  navigator.geolocation.getCurrentPosition(
+    async position => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      try {
+        await fetch(`${BASE_URL}/checkin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lat,
+            lng,
+            place_id: 'shaniwarwada'
+          })
+        });
+        console.log('GPS checkin sent:', lat, lng);
+      } catch (err) {
+        
+        console.log('GPS checkin failed silently');
+      }
+    },
+    () => {},
+    { timeout: 5000, maximumAge: 60000 }
+  );
+}
+
+async function fetchGPSDensity(lat, lng) {
+  const res = await fetch(`${BASE_URL}/live-density?lat=${lat}&lng=${lng}`);
+  return res.json();
+}
 
 async function postSOS(message = 'Tourist SOS triggered') {
   const res = await fetch(`${BASE_URL}/sos`, {
@@ -179,6 +250,32 @@ function updateSmartPanel(crowd) {
   const forecast = crowd.forecast || {};
   headline.textContent = getSmartHeadline(crowd);
   subline.textContent = `~${safeText(crowd.person_count_estimate, '0')} people estimated inside - Forecast: ${safeText(forecast.label, 'Unavailable')}`;
+}
+
+function updateGPSDensityCard(data) {
+  const card = document.getElementById('gps-density-card');
+  const badge = document.getElementById('gps-badge');
+  const headline = document.getElementById('gps-headline');
+  const subline = document.getElementById('gps-subline');
+  if (!card || !badge || !headline || !subline) return;
+
+  const level = data.density_level.toLowerCase();
+  badge.className = `density-badge ${level}`;
+  badge.textContent = data.density_level;
+  card.style.borderLeftColor =
+    level === 'low' ? 'var(--density-low)' :
+      level === 'medium' ? 'var(--density-medium)' : 'var(--density-high)';
+  headline.textContent = `~${data.gps_crowd_count} visitors detected nearby via GPS`;
+  subline.textContent = `Within ${data.radius_meters}m radius - Last ${data.window_minutes} minutes - No camera needed`;
+}
+
+function loadGPSDensityCard() {
+  fetchGPSDensity(18.5195, 73.8553)
+    .then(updateGPSDensityCard)
+    .catch(() => {
+      const headline = document.getElementById('gps-headline');
+      if (headline) headline.textContent = 'GPS estimate unavailable';
+    });
 }
 
 function updateDetailMonument(monument) {
@@ -504,6 +601,7 @@ async function loadPageData() {
 async function initDetailPage() {
   initDetailInteractions();
   initSOSGesture();
+  loadGPSDensityCard();
   await loadPageData();
   window.setInterval(() => {
     refreshDetailCrowd().catch(error => {
@@ -513,6 +611,8 @@ async function initDetailPage() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  sendGPSCheckin();
+
   if (document.body.dataset.page === 'detail') {
     initDetailPage();
   } else {

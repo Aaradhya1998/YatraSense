@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from .alert_service import check_and_get_alert, get_alert_events, trigger_sos_alert
 from .density_classifier import classify_density
+from .gps_engine import add_checkin, get_gps_density
 from .predictive_engine import get_forecast
 
 
@@ -253,6 +254,29 @@ def get_monument_info() -> dict[str, Any]:
 @app.get("/historical-pattern")
 def get_historical_pattern() -> dict[str, list[dict[str, str]]]:
     return _load_weekly_historical_pattern()
+
+
+@app.post("/checkin")
+async def checkin(data: dict):
+    try:
+        lat = float(data.get("lat"))
+        lng = float(data.get("lng"))
+        place_id = data.get("place_id", "unknown")
+        add_checkin(lat, lng, place_id)
+        return {"status": "ok", "message": "Checkin recorded"}
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid coordinates: {str(exc)}",
+        ) from exc
+
+
+@app.get("/live-density")
+async def live_density(lat: float, lng: float):
+    try:
+        return get_gps_density(lat, lng)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/crowd-status")

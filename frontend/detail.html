@@ -61,6 +61,26 @@
       <button class="btn-primary full-width" type="button" data-directions>Get Directions &#8594;</button>
     </section>
 
+    <div class="card" id="gps-density-card" style="margin: 0 20px 16px; border-left: 4px solid var(--density-low);">
+      <div style="font-size:11px; font-family:'DM Mono'; color:var(--accent); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px;">
+        GPS Crowd Estimate
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div id="gps-headline" style="font-family:'Nunito'; font-weight:700; font-size:16px; color:var(--text-primary);">
+            Checking nearby visitors...
+          </div>
+          <div id="gps-subline" style="font-family:'DM Sans'; font-size:12px; color:var(--text-muted); margin-top:4px;">
+            Based on tourist devices in last 15 minutes &middot; 100m radius
+          </div>
+        </div>
+        <div id="gps-badge" class="density-badge low">...</div>
+      </div>
+      <div style="margin-top:10px; font-size:11px; color:var(--text-muted); font-family:'DM Mono';">
+        Mode: GPS Clustering - works without cameras
+      </div>
+    </div>
+
     <section class="detail-info-row" aria-label="Visit information">
       <article class="card compact-info-card">
         <span>Hours</span>
