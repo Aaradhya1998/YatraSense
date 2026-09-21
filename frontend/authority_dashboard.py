@@ -13,6 +13,7 @@ except ImportError:
 
 BASE_URL = "http://localhost:8000"
 REQUEST_TIMEOUT = 5
+FIREBASE_PROJECT_ID = "yatrasense"
 CAMERA_PROFILES = {
     "cam1": {"density": "HIGH", "count": 38, "forecast_label": "MEDIUM", "eta": 25},
     "cam2": {"density": "MEDIUM", "count": 17, "forecast_label": "LOW", "eta": 15},
@@ -120,6 +121,67 @@ def render_autorefresh():
         return True
 
     return False
+
+
+def _firestore_number(field, default=0):
+    return field.get("doubleValue", field.get("integerValue", default))
+
+
+def get_firestore_sos_alerts():
+    """Fetch SOS alerts from Firestore using REST API - no SDK needed."""
+    try:
+        url = (
+            f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}"
+            "/databases/(default)/documents/sos_alerts"
+        )
+        response = requests.get(url, timeout=5)
+        if response.status_code != 200:
+            return []
+
+        data = response.json()
+        documents = data.get("documents", [])
+
+        alerts = []
+        for document in documents:
+            fields = document.get("fields", {})
+
+            user_fields = fields.get("user", {}).get("mapValue", {}).get("fields", {})
+            location_fields = fields.get("location", {}).get("mapValue", {}).get("fields", {})
+
+            name = user_fields.get("name", {}).get("stringValue", "Anonymous")
+            email = user_fields.get("email", {}).get("stringValue", "Unknown")
+            phone = user_fields.get("phone", {}).get("stringValue", "Not provided")
+            emergency_contact = user_fields.get("emergencyContact", {}).get(
+                "stringValue",
+                "Not provided",
+            )
+
+            lat = _firestore_number(location_fields.get("lat", {}), 0)
+            lng = _firestore_number(location_fields.get("lng", {}), 0)
+
+            maps_link = fields.get("googleMapsLink", {}).get("stringValue", "")
+            timestamp = fields.get("timestamp", {}).get("stringValue", "")
+            message = fields.get("message", {}).get("stringValue", "SOS Alert")
+
+            alerts.append(
+                {
+                    "name": name,
+                    "email": email,
+                    "phone": phone,
+                    "emergency_contact": emergency_contact,
+                    "lat": lat,
+                    "lng": lng,
+                    "maps_link": maps_link,
+                    "timestamp": timestamp,
+                    "message": message,
+                }
+            )
+
+        alerts.sort(key=lambda item: item["timestamp"], reverse=True)
+        return alerts
+    except Exception as exc:
+        print(f"Firestore fetch error: {exc}")
+        return []
 
 
 st.set_page_config(page_title="Authority Dashboard", layout="centered")
@@ -311,51 +373,80 @@ with col_metrics:
 with col_sos:
     st.subheader("SOS Alerts")
 
-    try:
-        alerts_response = requests.get("http://localhost:8000/alerts", timeout=5)
-        all_alerts = alerts_response.json()
-        sos_alerts = [a for a in all_alerts if a.get("type") == "SOS"]
-    except Exception:
-        sos_alerts = []
+    firebase_alerts = get_firestore_sos_alerts()
 
-    if sos_alerts:
-        st.markdown(
-            """
-            <style>
-              @keyframes pulse {
-                0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0.75); }
-                50% { box-shadow: 0 0 0 8px rgba(255,107,107,0); }
-              }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-        for alert in reversed(sos_alerts):
+    if firebase_alerts:
+        for alert in firebase_alerts:
+            try:
+                timestamp = datetime.fromisoformat(alert["timestamp"].replace("Z", ""))
+                time_str = timestamp.strftime("%d %b %Y - %H:%M:%S")
+            except Exception:
+                time_str = alert["timestamp"]
+
+            maps_url = (
+                alert["maps_link"]
+                if alert["maps_link"]
+                else f"https://maps.google.com/?q={alert['lat']},{alert['lng']}"
+            )
+
             st.markdown(
                 f"""
                 <div style="
-                  background: #C0392B;
-                  border-radius: 12px;
-                  padding: 16px;
-                  margin-bottom: 12px;
-                  animation: pulse 1s infinite;
-                  border: 2px solid #ff6b6b;
+                    background: #C0392B;
+                    border-radius: 12px;
+                    padding: 14px;
+                    margin-bottom: 12px;
+                    border: 2px solid #ff6b6b;
+                    box-shadow: 0 0 20px rgba(192,57,43,0.5);
                 ">
-                  <div style="color:white; font-weight:800; font-size:16px; margin-bottom:6px;">
-                    SOS ALERT
-                  </div>
-                  <div style="color:white; font-size:13px; line-height:1.35; margin-bottom:8px;">
-                    {alert.get("message", "Tourist emergency reported")}
-                  </div>
-                  <div style="color:rgba(255,255,255,0.75); font-size:11px; font-family:monospace;">
-                    {alert.get("timestamp", "-")}
-                  </div>
+                    <div style="color:white; font-weight:800; font-size:15px; margin-bottom:8px;">
+                        SOS ALERT
+                    </div>
+                    <div style="color:white; font-size:13px; margin-bottom:4px;">
+                        <b>Name:</b> {alert['name']}
+                    </div>
+                    <div style="color:rgba(255,255,255,0.85); font-size:12px; margin-bottom:4px;">
+                        <b>Email:</b> {alert['email']}
+                    </div>
+                    <div style="color:rgba(255,255,255,0.85); font-size:12px; margin-bottom:4px;">
+                        <b>Phone:</b> {alert['phone']}
+                    </div>
+                    <div style="color:rgba(255,255,255,0.85); font-size:12px; margin-bottom:4px;">
+                        <b>Emergency Contact:</b> {alert['emergency_contact']}
+                    </div>
+                    <div style="margin-top:8px;">
+                        <a href="{maps_url}" target="_blank" style="
+                            background:white; color:#C0392B;
+                            padding:6px 12px; border-radius:12px;
+                            font-size:12px; font-weight:700;
+                            text-decoration:none;
+                        ">Open in Google Maps</a>
+                    </div>
+                    <div style="color:rgba(255,255,255,0.5); font-size:10px; font-family:monospace; margin-top:8px;">
+                        {time_str}
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
     else:
-        st.info("No SOS alerts")
+        st.markdown(
+            """
+            <div style="
+                background: rgba(107,143,94,0.15);
+                border-radius: 12px;
+                padding: 16px;
+                border: 1px solid rgba(107,143,94,0.3);
+                text-align:center;
+            ">
+                <div style="color:#6B8F5E; font-size:13px; font-weight:600;">All Clear</div>
+                <div style="color:rgba(255,255,255,0.3); font-size:11px; margin-top:4px;">No SOS alerts</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.caption("Live from Firebase Firestore")
 
 st.divider()
 st.subheader("GPS-Based Crowd Estimation")

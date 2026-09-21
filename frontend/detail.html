@@ -8,6 +8,7 @@
   <title>Shaniwarwada Fort | YatraSense</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23E8621A'/><text x='50' y='64' font-size='46' text-anchor='middle' fill='white' font-family='Arial'>Y</text></svg>">
   <link rel="stylesheet" href="style.css">
+  <script type="module" src="firebase-auth.js"></script>
 </head>
 <body data-page="detail">
   <main class="app-shell detail-shell">
@@ -18,11 +19,29 @@
         </svg>
       </button>
       <div class="detail-nav-title" data-sticky-title>Shaniwarwada Fort</div>
-      <button class="icon-button share-action" type="button" aria-label="Share">
-        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M16 8.5 8.5 13M16 15.5 8.5 11M18 6.5a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 18 6.5Zm-12 8a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 6 14.5Zm12 5.5a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 18 20Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-        </svg>
-      </button>
+      <!-- Login button (shows when logged out) -->
+      <button id="login-btn" onclick="handleLogin()" style="
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-family: 'Nunito';
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+      ">Sign In</button>
+
+      <!-- User panel (shows when logged in) -->
+      <div id="user-panel" style="display:none; align-items:center; gap:8px;">
+        <img id="user-photo" src="" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+        <span id="user-name" style="font-family:'Nunito'; font-weight:600; font-size:13px; color:var(--text-primary);"></span>
+        <button onclick="handleSignOut()" style="
+          background:none; border:1px solid var(--accent-secondary);
+          border-radius:12px; padding:4px 10px;
+          font-size:11px; color:var(--text-muted); cursor:pointer;
+        ">Sign out</button>
+      </div>
     </header>
 
     <section class="place-hero">
@@ -174,5 +193,69 @@
     <div class="detail-bottom-spacer" aria-hidden="true"></div>
   </main>
   <script src="app.js"></script>
+  <script type="module">
+    import { signInWithGoogle, signOutUser, getCurrentUser, saveSosToFirestore } from './firebase-auth.js';
+
+    async function handleLogin() {
+      const user = await signInWithGoogle();
+      if (user) {
+        showToast(`Welcome, ${user.name.split(' ')[0]}!`);
+      }
+    }
+
+    async function handleSignOut() {
+      await signOutUser();
+      showToast('Signed out successfully');
+    }
+
+    async function triggerSOS() {
+      const user = getCurrentUser();
+      console.log('triggerSOS called, user:', user);
+
+      function showCallButton() {
+        const callBtn = document.createElement('div');
+        callBtn.style.cssText = `
+          position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
+          background:var(--density-high); color:white;
+          font-family:'Nunito'; font-weight:700; font-size:16px;
+          padding:14px 32px; border-radius:24px; cursor:pointer;
+          z-index:1001; box-shadow:0 4px 20px rgba(192,57,43,0.5);
+        `;
+        callBtn.textContent = 'Call Authority Now';
+        callBtn.onclick = () => window.open('tel:+911800110');
+        document.body.appendChild(callBtn);
+        setTimeout(() => callBtn.remove(), 8000);
+      }
+
+      try {
+        navigator.geolocation.getCurrentPosition(async position => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          console.log('GPS obtained:', lat, lng);
+
+          await saveSosToFirestore(lat, lng, 'Tourist SOS triggered');
+          await postSOS(user ? `SOS from ${user.name} at ${lat},${lng}` : 'Anonymous SOS');
+          showToast('Help alert sent to authorities');
+          showCallButton();
+        }, async err => {
+          console.log('GPS failed, sending SOS without location:', err);
+
+          await saveSosToFirestore(0, 0, 'Tourist SOS triggered - location unavailable');
+          await postSOS(user ? `SOS from ${user.name} - no GPS` : 'Anonymous SOS');
+          showToast('Help alert sent to authorities');
+          showCallButton();
+        }, { timeout: 5000 });
+      } catch (err) {
+        console.error('triggerSOS error:', err);
+      }
+    }
+
+    // Make functions global
+    window.handleLogin = handleLogin;
+    window.handleSignOut = handleSignOut;
+    window.triggerSOS = triggerSOS;
+    window.getCurrentUser = getCurrentUser;
+    window.saveSosToFirestore = saveSosToFirestore;
+  </script>
 </body>
 </html>

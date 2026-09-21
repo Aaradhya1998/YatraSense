@@ -569,10 +569,16 @@ function initSOSGesture() {
     }
 
     try {
-      await postSOS('Tourist SOS triggered');
+      console.log('SOS triggered, current user:', window.getCurrentUser ? window.getCurrentUser() : 'function not found');
+      if (window.triggerSOS) {
+        window.triggerSOS();
+      } else {
+        // fallback
+        postSOS('Tourist SOS triggered').then(() => {
+          showToast('Help alert sent to authorities');
+        });
+      }
       hideSOS();
-      showToast('Help alert sent to authorities');
-      showAuthorityCallButton();
     } catch (error) {
       resetSOS();
       showToast('Unable to send SOS alert', true);
