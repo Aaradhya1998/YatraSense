@@ -1,0 +1,81 @@
+flowchart TD
+
+subgraph group_users_views["Users &amp; Views"]
+  node_tourist_dashboard["Tourist Dashboard<br/>[app.js]"]
+  node_authority_dashboard["Authority Dashboard"]
+  node_firebase_auth["Firebase Auth<br/>[firebase-auth.js]"]
+end
+
+subgraph group_api_orchestration["API Orchestration"]
+  node_fastapi_backend["FastAPI Backend<br/>[main.py]"]
+end
+
+subgraph group_crowd_intelligence["Crowd Intelligence"]
+  node_cv_engine["CV Engine<br/>[cv_engine.py]"]
+  node_density_classifier["Density Classifier"]
+  node_gps_engine["GPS Clustering<br/>[gps_engine.py]"]
+end
+
+subgraph group_prediction_alerts["Prediction &amp; Alerts"]
+  node_predictive_engine["Predictive Engine"]
+  node_alert_service["Alert Service<br/>[alert_service.py]"]
+end
+
+subgraph group_data_integrations["Data &amp; Integrations"]
+  node_video_assets["Sample Videos"]
+  node_monument_info[("Monument Data<br/>[monument_info.json]")]
+  node_historical_pattern[("Historical Pattern")]
+  node_gps_checkins[("GPS Check-ins<br/>[gps_checkins.json]")]
+  node_firebase[("Firebase Firestore")]
+end
+
+node_tourist(("Tourist"))
+node_authority(("Site Authority"))
+
+node_tourist -->|"uses"| node_tourist_dashboard
+node_authority -->|"uses"| node_authority_dashboard
+node_tourist_dashboard -->|"requests data"| node_fastapi_backend
+node_authority_dashboard -->|"requests status"| node_fastapi_backend
+node_firebase_auth -.->|"stores profiles"| node_firebase
+node_tourist_dashboard -.->|"authenticates"| node_firebase_auth
+node_tourist_dashboard -.->|"stores SOS"| node_firebase
+node_authority_dashboard -.->|"reads SOS"| node_firebase
+node_fastapi_backend -->|"reads info"| node_monument_info
+node_fastapi_backend -->|"runs analysis"| node_cv_engine
+node_cv_engine -->|"reads frames"| node_video_assets
+node_fastapi_backend -->|"classifies counts"| node_density_classifier
+node_fastapi_backend -->|"gets forecast"| node_predictive_engine
+node_predictive_engine -->|"reads patterns"| node_historical_pattern
+node_fastapi_backend -->|"checks alerts"| node_alert_service
+node_fastapi_backend -->|"gets GPS density"| node_gps_engine
+node_gps_engine -->|"reads check-ins"| node_gps_checkins
+node_gps_engine -->|"writes check-ins"| node_gps_checkins
+node_tourist_dashboard -->|"posts check-in"| node_fastapi_backend
+node_tourist_dashboard -->|"posts SOS"| node_fastapi_backend
+
+click node_tourist_dashboard "https://github.com/aaradhya1998/yatrasense/blob/main/frontend/app.js"
+click node_authority_dashboard "https://github.com/aaradhya1998/yatrasense/blob/main/frontend/authority_dashboard.py"
+click node_firebase_auth "https://github.com/aaradhya1998/yatrasense/blob/main/frontend/firebase-auth.js"
+click node_fastapi_backend "https://github.com/aaradhya1998/yatrasense/blob/main/backend/main.py"
+click node_cv_engine "https://github.com/aaradhya1998/yatrasense/blob/main/backend/cv_engine.py"
+click node_density_classifier "https://github.com/aaradhya1998/yatrasense/blob/main/backend/density_classifier.py"
+click node_gps_engine "https://github.com/aaradhya1998/yatrasense/blob/main/backend/gps_engine.py"
+click node_predictive_engine "https://github.com/aaradhya1998/yatrasense/blob/main/backend/predictive_engine.py"
+click node_alert_service "https://github.com/aaradhya1998/yatrasense/blob/main/backend/alert_service.py"
+click node_video_assets "https://github.com/aaradhya1998/yatrasense/tree/main/data/videos"
+click node_monument_info "https://github.com/aaradhya1998/yatrasense/blob/main/data/monument_info.json"
+click node_historical_pattern "https://github.com/aaradhya1998/yatrasense/blob/main/data/historical_pattern.csv"
+click node_gps_checkins "https://github.com/aaradhya1998/yatrasense/blob/main/data/gps_checkins.json"
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_tourist_dashboard,node_authority_dashboard,node_firebase_auth toneBlue
+class node_fastapi_backend toneAmber
+class node_cv_engine,node_density_classifier,node_gps_engine toneMint
+class node_predictive_engine,node_alert_service toneRose
+class node_video_assets,node_monument_info,node_historical_pattern,node_gps_checkins,node_firebase,node_tourist,node_authority toneIndigo

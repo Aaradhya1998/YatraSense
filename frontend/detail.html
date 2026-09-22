@@ -194,12 +194,16 @@
   </main>
   <script src="app.js"></script>
   <script type="module">
-    import { signInWithGoogle, signOutUser, getCurrentUser, saveSosToFirestore } from './firebase-auth.js';
+    import { signInWithGoogle, signOutUser, getCurrentUser, saveSosToFirestore, showProfileSetup } from './firebase-auth.js';
 
     async function handleLogin() {
       const user = await signInWithGoogle();
       if (user) {
         showToast(`Welcome, ${user.name.split(' ')[0]}!`);
+        // Show profile setup if phone is empty
+        if (!user.phone) {
+          setTimeout(() => showProfileSetup(user), 800);
+        }
       }
     }
 
@@ -256,6 +260,7 @@
     window.triggerSOS = triggerSOS;
     window.getCurrentUser = getCurrentUser;
     window.saveSosToFirestore = saveSosToFirestore;
+    window.showProfileSetup = showProfileSetup;
   </script>
 </body>
 </html>
