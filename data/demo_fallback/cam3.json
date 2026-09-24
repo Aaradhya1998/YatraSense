@@ -1,0 +1,9 @@
+{
+  "current_density": "MEDIUM",
+  "person_count_estimate": 9,
+  "forecast": {
+    "label": "HIGH",
+    "text": "Likely to reach HIGH in ~20 minutes",
+    "eta_minutes": 20
+  }
+}
